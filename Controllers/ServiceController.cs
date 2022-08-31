@@ -25,89 +25,47 @@ namespace Domino.Controllers
             }
             return await _context.cart.ToListAsync();
         }
-
-        // GET: api/Carts/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Cart>> GetCart(int id)
+        [HttpGet]
+        [Route("GetCartById")]
+        //Get Cart by Cart ID
+        public async Task<Cart> GetCartById(int id)
         {
-            if (_context.cart == null)
-            {
-                return NotFound();
-            }
-            var cart = await _context.cart.FindAsync(id);
-
-            if (cart == null)
-            {
-                return NotFound();
-            }
-
+            var c = await _context.cart.Include(x => x.pizza).Where(x => x.CartID == id).Select(x => x).FirstOrDefaultAsync();
+            return c;
+        }
+        
+        [HttpGet("{id}")]
+        // View Cart by Customer ID (My Cart)
+        public async Task<List<Cart>> ViewCart(int id)
+        {
+            List<Cart> cart = new List<Cart>();
+            //var Id = (from i in _context.customers
+            //          where i.CustomerID == id
+            //          select i.CartTypeID).FirstOrDefault();
+            var Id = _context.customers.Where(x => x.CustomerID == id).Select(x => x.CartTypeID).FirstOrDefault();
+            cart = _context.cart.Include(x => x.pizza).Where(x => x.CartTypeID == Id).ToList();
             return cart;
         }
-
-        // PUT: api/Carts/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutCart(int id, Cart cart)
+        //Edit quantity option for already added item in cart
+        public async Task<ActionResult> PutCart(Cart cart)
         {
-            if (id != cart.CartID)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(cart).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CartExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Carts
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Cart>> PostCart(Cart cart)
-        {
-            if (_context.cart == null)
-            {
-                return Problem("Entity set 'DominodbContext.cart'  is null.");
-            }
-            _context.cart.Add(cart);
+            var c = await _context.cart.FindAsync(cart.CartID);
+            c.Quantity = cart.Quantity;
+            c.UnitPrice = c.Quantity*(from i in _context.pizza where i.PizzaID == c.PizzaID select i.Price).SingleOrDefault();
+            _context.cart.Update(c);
             await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCart", new { id = cart.CartID }, cart);
+            return Ok(c);
         }
-
         // DELETE: api/Carts/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCart(int id)
+        //Delete Cart by Cart ID
+        public async Task<IActionResult> DeleteCart(int? id)
         {
-            if (_context.cart == null)
-            {
-                return NotFound();
-            }
-            var cart = await _context.cart.FindAsync(id);
-            if (cart == null)
-            {
-                return NotFound();
-            }
-
-            _context.cart.Remove(cart);
+            var c = await _context.cart.Include(x => x.pizza).Where(x => x.CartID == id).Select(x => x).FirstOrDefaultAsync();
+            _context.cart.Remove(c);
             await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(c);
         }
         private bool CartExists(int id)
         {
@@ -115,40 +73,54 @@ namespace Domino.Controllers
         }
         [HttpPost]
         [Route("AddToCart")]
-        public async Task<ActionResult<Cart>> AddToCart(int cid,int pid,int qty)
+        public async Task<ActionResult<Cart>> AddToCart(Cart cart)
         {
-            //if (_context.cart == null)
-            //{
-            //    return Problem("Entity set 'DominodbContext.cart'  is null.");
-            //}
-            Cart cart=new Cart();
-            cart.CustomerID = cid;
-            Customer customer= (from i in _context.customers
-                                where i.CustomerID == cart.CustomerID
-                                select i).SingleOrDefault();
-            //cart.CartTypeID = (from i in _context.customers
-            //                   where i.CustomerID == cart.CustomerID
-            //                   select i.CartTypeID).SingleOrDefault();
-            cart.CartTypeID = customer.CartTypeID;
-            if(cart.CartTypeID == null)
+            var ID = await (from i in _context.customers where i.CustomerID == cart.CustomerID select i.CartTypeID).FirstOrDefaultAsync();
+            var check = await (from i in _context.cart
+                               where i.CartTypeID == ID && i.PizzaID == cart.PizzaID
+                               select i).SingleOrDefaultAsync();
+            if (check == null)
             {
-                Guid obj = Guid.NewGuid();
-                //Console.WriteLine("New Guid is " + obj.ToString());
-                cart.CartTypeID = obj.ToString();
-                customer.CartTypeID = obj.ToString();
+                var customer = await (from i in _context.customers
+                                      where i.CustomerID == cart.CustomerID
+                                      select i).SingleOrDefaultAsync();
+                cart.CartTypeID = customer.CartTypeID;
+                if (cart.CartTypeID == null)
+                {
+                    Guid obj = Guid.NewGuid();
+                    //Console.WriteLine("New Guid is " + obj.ToString());
+                    cart.CartTypeID = obj.ToString();
+                    customer.CartTypeID = obj.ToString();
+                }
+                cart.UnitPrice = cart.Quantity * (from i in _context.pizza
+                                                  where i.PizzaID == cart.PizzaID
+                                                  select i.Price).SingleOrDefault();
             }
-           
-            cart.PizzaID=pid;
-            cart.Quantity = qty;
-            cart.TotalAmount = qty * (from i in _context.pizza
-                                      where i.PizzaID == cart.PizzaID
-                                      select i.Price).SingleOrDefault();
-         
-          
+            else
+            {
+                check.Quantity += cart.Quantity;
+                check.UnitPrice = check.Quantity * (from i in _context.pizza
+                                                   where i.PizzaID == cart.PizzaID
+                                                   select i.Price).SingleOrDefault();
+                await _context.SaveChangesAsync();
+                return check;
+            }
             _context.cart.Add(cart);
             await _context.SaveChangesAsync();
-
             return CreatedAtAction("GetCart", new { id = cart.CartID }, cart);
+        }
+       
+        [HttpPut]
+        [Route("UpdateTypeId")]
+        public async Task<ActionResult<Customer>> UpdateTypeId(Customer c)
+        {
+            var update = await _context.customers.FindAsync(c.CustomerID);
+            update.CartTypeID = null;
+            _context.customers.Update(update);
+            await _context.SaveChangesAsync();  
+            return null;
         }
     }
 }
+
+

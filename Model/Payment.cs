@@ -8,14 +8,14 @@ namespace Domino.Model
         [Key]
         [Display(Name = "Payment ID")]
         public int PaymentID { get; set; }
-        public int CartID { get; set; }
-        [ForeignKey("CartID")]
-        public virtual Cart? cart { get; set; }
-        public int CustomerID { get; set; }
+        public int? CustomerID { get; set; }
         [ForeignKey("CustomerID")]
         public virtual Customer? customer { get; set; }
         [Display(Name = "Card Number")]
-        public int CardNumber { get; set; } 
+        public int? CardNumber { get; set; }
+        [Display(Name = "Total Amount")]
+        public float? TotalAmount { get; set; }  
+      
 
     }
 }

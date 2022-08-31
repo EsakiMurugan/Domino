@@ -1,11 +1,13 @@
 ﻿using Domino.Data;
 using Domino.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Domino.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class PizzaController : ControllerBase
@@ -75,7 +77,7 @@ namespace Domino.Controllers
                     "Error updating data");
             }
         }
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<ActionResult<Pizza>> DeletePizza(int id)
         {
             try

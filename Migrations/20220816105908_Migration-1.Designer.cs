@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Domino.Migrations
 {
     [DbContext(typeof(DominodbContext))]
-    [Migration("20220812114312_GUID")]
-    partial class GUID
+    [Migration("20220816105908_Migration-1")]
+    partial class Migration1
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -66,7 +66,7 @@ namespace Domino.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<float>("TotalAmount")
+                    b.Property<float>("UnitPrice")
                         .HasColumnType("real");
 
                     b.HasKey("CartID");
@@ -90,7 +90,6 @@ namespace Domino.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CartTypeID")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CustomerName")
@@ -121,15 +120,13 @@ namespace Domino.Migrations
                     b.Property<int>("CardNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("CartID")
-                        .HasColumnType("int");
-
                     b.Property<int>("CustomerID")
                         .HasColumnType("int");
 
-                    b.HasKey("PaymentID");
+                    b.Property<float>("TotalAmount")
+                        .HasColumnType("real");
 
-                    b.HasIndex("CartID");
+                    b.HasKey("PaymentID");
 
                     b.HasIndex("CustomerID");
 
@@ -166,17 +163,17 @@ namespace Domino.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReceiptID"), 1L, 1);
 
-                    b.Property<int>("CartID")
+                    b.Property<int>("CustomerID")
                         .HasColumnType("int");
 
-                    b.Property<int>("CustomerID")
+                    b.Property<int>("PaymentID")
                         .HasColumnType("int");
 
                     b.HasKey("ReceiptID");
 
-                    b.HasIndex("CartID");
-
                     b.HasIndex("CustomerID");
+
+                    b.HasIndex("PaymentID");
 
                     b.ToTable("receipts");
                 });
@@ -202,47 +199,32 @@ namespace Domino.Migrations
 
             modelBuilder.Entity("Domino.Model.Payment", b =>
                 {
-                    b.HasOne("Domino.Model.Cart", "cart")
-                        .WithMany("Payment")
-                        .HasForeignKey("CartID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domino.Model.Customer", "customer")
                         .WithMany("Payment")
                         .HasForeignKey("CustomerID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("cart");
 
                     b.Navigation("customer");
                 });
 
             modelBuilder.Entity("Domino.Model.Receipt", b =>
                 {
-                    b.HasOne("Domino.Model.Cart", "cart")
-                        .WithMany("Receipt")
-                        .HasForeignKey("CartID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Domino.Model.Customer", "customer")
                         .WithMany("Receipt")
                         .HasForeignKey("CustomerID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("cart");
+                    b.HasOne("Domino.Model.Payment", "payment")
+                        .WithMany("Receipt")
+                        .HasForeignKey("PaymentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("customer");
-                });
 
-            modelBuilder.Entity("Domino.Model.Cart", b =>
-                {
-                    b.Navigation("Payment");
-
-                    b.Navigation("Receipt");
+                    b.Navigation("payment");
                 });
 
             modelBuilder.Entity("Domino.Model.Customer", b =>
@@ -252,6 +234,11 @@ namespace Domino.Migrations
                     b.Navigation("Receipt");
 
                     b.Navigation("cart");
+                });
+
+            modelBuilder.Entity("Domino.Model.Payment", b =>
+                {
+                    b.Navigation("Receipt");
                 });
 
             modelBuilder.Entity("Domino.Model.Pizza", b =>

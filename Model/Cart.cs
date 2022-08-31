@@ -7,21 +7,20 @@ namespace Domino.Model
     {
         [Key]
         [Display(Name = "Cart ID")]
-        public int CartID { get; set; }
-        [Required]
+        public int? CartID { get; set; }
         [Display(Name = "Carttype ID")]
         public string? CartTypeID { get; set; }
-        public int PizzaID { get; set; }
+        public int? PizzaID { get; set; }
         [ForeignKey("PizzaID")]  
         public virtual Pizza? pizza { get; set; }
         public int CustomerID { get; set; }
         [ForeignKey("CustomerID")]
         public virtual Customer? customer { get; set; } 
-        public int Quantity { get; set; }
-        [Display(Name = "Total Amount")]
-        public float TotalAmount { get; set; }  
-        public List<Payment>? Payment { get; set; }
-        public List<Receipt>? Receipt { get; set; }
+        public int? Quantity { get; set; }
+        [Display(Name = "Unit price")]
+        public float? UnitPrice { get; set; }
+       
+
 
     }
 }
