@@ -41,10 +41,18 @@ builder.Services.AddDbContext<DominodbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+// Allow Url Blocked error by CORS Policy
+
+builder.Services.AddCors(options => options.AddPolicy("default", policy =>
+{
+    policy.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod();
+}));
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
 //Swagger Enabler
 builder.Services.AddSwaggerGen(option =>
 {
@@ -72,7 +80,11 @@ builder.Services.AddSwaggerGen(option =>
             new string[]{}
         }
     });
-}); builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+});
+
+
+//builder.Services.AddSwaggerGen();
+builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 var app = builder.Build();
 
@@ -86,7 +98,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseCors("default");
 app.MapControllers();
 
 app.Run();
